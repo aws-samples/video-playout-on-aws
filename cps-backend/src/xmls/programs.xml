@@ -1,0 +1,11 @@
+<programme start="{{START_TIME}}" stop="20080715010000 +0530" channel="{{CHANNEL_ID}}">
+  <title lang="en">{{TITLE}}</title>
+  <date>{{DATE}}</date>
+  <category lang="en">{{CATEGORY}}</category>
+  <episode-num system="dd_progid">{{PROGRAM_ID}}</episode-num>
+  <episode-num system="onscreen">{{EPISODE_NUMBER}}</episode-num>
+  <audio>
+      <stereo>stereo</stereo>
+    </audio>
+  <subtitles type="teletext" />
+</programme>

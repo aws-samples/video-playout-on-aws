@@ -1,0 +1,181 @@
+<div class="theme box-item" data-time="{{TIME_SLOT}}" id="{{DIV_ID}">
+    <h4 class="timeline_program_details">Program Details</h4>
+    <div class=row>
+        <div class="col-md">
+            <div class="row">
+                <div class="col-md-4">
+                    <span class="input-group-text" id="basic-addon1">Program Sequence &nbsp;
+                        <i class="material-icons">
+                            <span class="material-icons-outlined">
+                                <span class="material-icons-outlined">
+                                    <span class="material-icons-outlined">
+                                        watch_later
+                                    </span>
+                    </span>
+                    </span>
+                    </i> &nbsp;
+                    </span>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-control" class="ddl_hours" id="ddl_hours_{{DIV_ID}}" value="{{HOURS}}">
+    <option value="">Hours</option>
+    {{HOURS_OPTION_LIST}}
+    </select>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-control" placeholer="Minutes" class="ddl_minutes" id="ddl_minutes_{{DIV_ID}}" value="{{MINUTES}}">
+        <option value="">Minutes</option>
+        {{MINUTES_OPTION_LIST}}
+    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    &nbsp;
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <span class="input-group-text">
+                        Program Id
+                    </span>
+                </div>
+                <div class="col-md">
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon1">
+                    <i class="material-icons"><span class="material-icons-outlined"><span class="material-icons-outlined">
+                                <span class="material-icons-outlined">
+                                    badge
+                                </span>
+                            </span>
+                            </span>
+                            </i>
+                            </span>
+                        </div>
+                        <input type="text" class="form-control" placeholder=" Program Id" aria-label="Username" value="{{PROGRAM_ID}}" aria-describedby="basic-addon1" id="txt_programid_{{DIV_ID}}">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <span class="input-group-text">
+                        On Screen Episode Number
+                    </span>
+                </div>
+                <div class="col-md">
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon1">
+                    <i class="material-icons"><span class="material-icons-outlined"><span class="material-icons-outlined">
+                                <span class="material-icons-outlined">
+                                    movie
+                                </span>
+                            </span>
+                            </span>
+                            </i>
+                            </span>
+                        </div>
+                        <input type="text" class="form-control" placeholder=" On Screen Episode Number" aria-label="Username" aria-describedby="basic-addon1" value="{{EPISODE_NUMBER}}" id="txt_episodenumber_{{DIV_ID}}">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <span class="input-group-text">
+                        Title
+                    </span>
+                </div>
+                <div class="col-md">
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon1">
+                    <i class="material-icons"><span class="material-icons-outlined"><span class="material-icons-outlined">
+                                <span class="material-icons-outlined">
+                                    label
+                                </span>
+                            </span>
+                            </span>
+                            </i>
+                            </span>
+                        </div>
+                        <input type="text" class="form-control" placeholder=" Title" aria-describedby="basic-addon1" value="{{TITLE}}" id="txt_title_{{DIV_ID}}">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <span class="input-group-text">
+                        Category
+                    </span>
+                </div>
+                <div class="col-md">
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="basic-addon1">
+                    <i class="material-icons"><span class="material-icons-outlined"><span class="material-icons-outlined">
+                                <span class="material-icons-outlined">
+                                    category
+                                </span>
+                            </span>
+                            </span>
+                            </i>
+                            </span>
+                        </div>
+                        <input type="text" class="form-control" placeholder=" Category" aria-describedby="basic-addon1" value="{{CATEGORY}}" id="txt_category_{{DIV_ID}}">
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <span class="input-group-text">
+                        Program URL
+                    </span>
+                </div>
+                <div class="col">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" id="basic-addon1">
+                    <i class="material-icons"><span class="material-icons-outlined"><span class="material-icons-outlined">
+                                <span class="material-icons-outlined">
+                                    link
+                                </span>
+                        </span>
+                        </span>
+                        </i>
+                        </span>
+                        <input type="text" class="form-control" placeholder=" Paste your URL here" aria-describedby="basic-addon1" value="{{URL}}" id="txt_url_{{DIV_ID}}" />
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    &nbsp;
+                </div>
+            </div>
+            <div class="timeline_button_div">
+                <div class="col">
+
+                    <button class="btn btn-primary btn-raised save_schedule" data-divid="{{DIV_ID}}">
+            <i class="material-icons"><span class="material-icons-outlined"><span class="material-icons-outlined">
+                        <span class="material-icons-outlined">
+                            save
+                        </span>
+                    </span>
+                </span>
+            </i>
+        </button>
+
+                    <button class="btn btn-danger btn-raised delete_schedule" data-divid="{{DIV_ID}}">
+            <i class="material-icons"><span class="material-icons-outlined"><span class="material-icons-outlined">
+                        <span class="material-icons-outlined">
+                            delete
+                        </span>
+                    </span>
+                </span>
+            </i>
+        </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

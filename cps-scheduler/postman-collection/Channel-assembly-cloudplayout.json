@@ -1,0 +1,105 @@
+{
+	"info": {
+		"_postman_id": "c164dca1-1056-44e6-a7e2-b13f037e66a2",
+		"name": "Channel-assembly-cloudplayout",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create Channel",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"epg_file\": \"https://d21px05gngxu73.cloudfront.net/sample-xmltv-epg.xml\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://xuvbydzb1f.execute-api.us-east-2.amazonaws.com/cloudplayout/create",
+					"protocol": "https",
+					"host": [
+						"xuvbydzb1f",
+						"execute-api",
+						"us-east-2",
+						"amazonaws",
+						"com"
+					],
+					"path": [
+						"cloudplayout",
+						"create"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Start Channel",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"channel_id\": \"Channel_id\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://xuvbydzb1f.execute-api.us-east-2.amazonaws.com/cloudplayout/start",
+					"protocol": "https",
+					"host": [
+						"xuvbydzb1f",
+						"execute-api",
+						"us-east-2",
+						"amazonaws",
+						"com"
+					],
+					"path": [
+						"cloudplayout",
+						"start"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Stop Channel",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"channel_id\": \"Channel_id\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://xuvbydzb1f.execute-api.us-east-2.amazonaws.com/cloudplayout/stop",
+					"protocol": "https",
+					"host": [
+						"xuvbydzb1f",
+						"execute-api",
+						"us-east-2",
+						"amazonaws",
+						"com"
+					],
+					"path": [
+						"cloudplayout",
+						"stop"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

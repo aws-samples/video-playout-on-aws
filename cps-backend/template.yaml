@@ -1,0 +1,516 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  cloudplayoutservice
+
+Globals:
+    Function:
+      Timeout: 300
+      MemorySize: 1024
+          
+Parameters:
+  AppBucketName:
+    Type: String
+    Description: "REQUIRED: Unique S3 bucket name to be used to upload EPG from client."
+    Default: "cps-s3-scheduler-bucket"
+  EpgPath:
+    Type: String
+    Description: "REQUIRED: Path where EPG files will be uploaded."
+    Default: "uploaded_epg/"
+  Mp4Path:
+    Type: String
+    Description: "REQUIRED: Path where MP4 files will be uploaded."
+    Default: "uploaded_mp4/"
+  MyDynamoDBTableName:
+    Type: String
+    Description: "REQUIRED: Unique DDB Table name to use to store schedule."
+    Default: "cps-ddb-table"
+  CognitoUserPoolName:
+    Type: String
+    Description: "REQUIRED: Unique userpool name to use to secure application."
+    Default: "cps-cognito-userpool"
+  CognitoUserPoolClientName:
+    Type: String
+    Description: "REQUIRED: Unique congito application name to be secured."
+    Default: "cps-cognito-app-client"
+  SchedulerApiName:
+    Type: String
+    Description: "REQUIRED: Unique congito application name to be secured."
+    Default: "cps-api-schduler"
+  FunctionNameSuffix:
+    Type: String
+    Description: "REQUIRED: Unique congito application name to be secured."
+    Default: "cps-functions"
+  Stage:
+    Type: String
+    Description: "REQUIRED: Unique congito application name to be secured."
+    Default: "prod"
+
+Resources:
+  S3JsonLoggerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/s3-json-logger.s3JsonLoggerHandler
+      Runtime: nodejs14.x
+      MemorySize: 128
+      Timeout: 60
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref AppBucketName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MyDynamoDBTableName
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref MyDynamoDBTableName
+      Events:
+        S3NewObjectEvent:
+          Type: S3
+          Properties:
+            Bucket: !Ref AppBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: !Ref Mp4Path 
+                  - Name: suffix
+                    Value: ".mp4"
+  
+  AppBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref AppBucketName
+      CorsConfiguration: 
+        CorsRules: 
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - "GET"
+              - "PUT"
+              - "POST"
+            AllowedOrigins:
+              - '*'
+    
+  MyDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref MyDynamoDBTableName
+      AttributeDefinitions:
+        - AttributeName: PId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PId
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      
+  SchedulerApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Ref SchedulerApiName
+      StageName: !Ref Stage
+      Cors: 
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: MyCognitoUserPoolAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: False
+        Authorizers: 
+          MyCognitoUserPoolAuthorizer:
+            UserPoolArn: !GetAtt MyCognitoUserPool.Arn 
+
+  ChannelsInternalApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      Cors: 
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+        
+  GetScheduleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'scheduler-function-${FunctionNameSuffix}'
+      Handler: src/handlers/get-schedule.handler
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          NODE_ENV: !Ref Stage
+          TABLE_NAME: !Ref MyDynamoDBTableName
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref AppBucketName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MyDynamoDBTableName
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SchedulerApi
+            Path: /schedule
+            Method: get
+    
+  GetProgramUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'Program-url-function-${FunctionNameSuffix}'
+      Handler: src/handlers/get-schedule.handler
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          NODE_ENV: !Ref Stage
+          TABLE_NAME: !Ref MyDynamoDBTableName
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref AppBucketName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MyDynamoDBTableName
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ChannelsInternalApi
+            Path: /programurl
+            Method: get
+  
+  UpdateScheduleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'update-scheduler-function-${FunctionNameSuffix}'
+      Handler: src/handlers/post-schedule.handler
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          NODE_ENV: !Ref Stage
+          TABLE_NAME: !Ref MyDynamoDBTableName
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MyDynamoDBTableName
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SchedulerApi
+            Path: /schedule
+            Method: post  
+            
+  DeleteScheduleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'delete-scheduler-function-${FunctionNameSuffix}'
+      Handler: src/handlers/delete-schedule.handler
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          NODE_ENV: !Ref Stage
+          TABLE_NAME: !Ref MyDynamoDBTableName
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MyDynamoDBTableName
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SchedulerApi
+            Path: /deleteschedule
+            Method: post  
+            
+  GetUploadDetailsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'upload-function-${FunctionNameSuffix}'
+      Handler: src/handlers/get-upload-details.handler
+      Runtime: nodejs12.x
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref AppBucketName
+        - S3WritePolicy:
+            BucketName: !Ref AppBucketName
+      Environment:
+        Variables:
+          NODE_ENV: !Ref Stage
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SchedulerApi
+            Path: /uploadauth
+            Method: get
+  
+  PostSchedulePlayoutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'schedule-playout-${FunctionNameSuffix}'
+      Handler: src/handlers/schedule-playout.handler
+      Runtime: nodejs12.x
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref AppBucketName
+        - S3WritePolicy:
+            BucketName: !Ref AppBucketName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MyDynamoDBTableName
+      Environment:
+        Variables:
+          NODE_ENV: !Ref Stage
+          TABLE_NAME: !Ref MyDynamoDBTableName
+          BUCKET_NAME: !Ref AppBucketName
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SchedulerApi
+            Path: /scheduleplayout
+            Method: post
+  
+  XMLTVParserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'xmltv-parser-${FunctionNameSuffix}'
+      Handler: src/handlers/xmltv-parser.handler
+      Runtime: nodejs12.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MyDynamoDBTableName
+        - S3ReadPolicy:
+            BucketName: !Ref AppBucketName
+      Environment:
+        Variables:
+          NODE_ENV: !Ref Stage
+          TABLE_NAME: !Ref MyDynamoDBTableName
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref AppBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                - Name: prefix
+                  Value: !Ref EpgPath 
+  
+  StartChannelFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'start-channel-function-${FunctionNameSuffix}'
+      Handler: src/handlers/start-channel.handler
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          NODE_ENV: !Ref Stage
+          TABLE_NAME: !Ref MyDynamoDBTableName
+          START_CHANNEL_API: "/startchannel"
+          STOP_CHANNEL_API: "/stopchannel"
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MyDynamoDBTableName
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SchedulerApi
+            Path: /start
+            Method: post  
+            
+  GetChannelsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'getchannels-function-${FunctionNameSuffix}'
+      Handler: src/handlers/get-channels.handler
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          NODE_ENV: !Ref Stage
+          TABLE_NAME: !Ref MyDynamoDBTableName
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MyDynamoDBTableName
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SchedulerApi
+            Path: /channels
+            Method: get          
+            
+  AddChannelsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'addchannel-function-${FunctionNameSuffix}'
+      Handler: src/handlers/add-channel.handler
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          NODE_ENV: !Ref Stage
+          TABLE_NAME: !Ref MyDynamoDBTableName
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MyDynamoDBTableName
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SchedulerApi
+            Path: /channel
+            Method: post              
+            
+  MyCognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Ref CognitoUserPoolName
+      # LambdaConfig:
+      #   PreSignUp: !GetAtt PreSignupLambdaFunction.Arn
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+      UsernameAttributes:
+        - email
+      Schema:
+        - AttributeDataType: String
+          Name: email
+          Required: false
+  
+  MyCognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref MyCognitoUserPool
+      ClientName: !Ref CognitoUserPoolClientName
+      GenerateSecret: false
+      ExplicitAuthFlows:
+       - USER_PASSWORD_AUTH
+  
+  CognitoIdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: sam_cognito_auth_identity_pool
+      AllowUnauthenticatedIdentities: false
+      CognitoIdentityProviders:
+        - ClientId:
+            Ref: MyCognitoUserPoolClient
+          ProviderName:
+            Fn::GetAtt: [MyCognitoUserPool, ProviderName]
+
+  CognitoIdentityPoolRoles:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId:
+        Ref: CognitoIdentityPool
+      Roles:
+        authenticated:
+          Fn::GetAtt: [CognitoAuthRole, Arn]
+        unauthenticated:
+          Fn::GetAtt: [CognitoUnauthRole, Arn]
+
+  CognitoAuthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: sam_cognito_auth_appAuthRole
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Federated: "cognito-identity.amazonaws.com"
+            Action:
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                "cognito-identity.amazonaws.com:aud":
+                  Ref: CognitoIdentityPool
+              "ForAnyValue:StringLike":
+                "cognito-identity.amazonaws.com:amr": authenticated
+      Policies:
+        - PolicyName: "CognitoAuthorizedPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "mobileanalytics:PutEvents"
+                  - "cognito-sync:*"
+                  - "cognito-identity:*"
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - "execute-api:Invoke"
+                  - "s3:PutObject"
+                  - "s3:PutObjectAcl"
+                Resource: "*"
+
+  CognitoUnauthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: sam_cognito_auth_appUnauthRole
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Federated: "cognito-identity.amazonaws.com"
+            Action:
+              - "sts:AssumeRoleWithWebIdentity"
+            Condition:
+              StringEquals:
+                "cognito-identity.amazonaws.com:aud":
+                  Ref: CognitoIdentityPool
+              "ForAnyValue:StringLike":
+                "cognito-identity.amazonaws.com:amr": unauthenticated
+      Policies:
+        - PolicyName: "CognitoUnauthorizedPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "mobileanalytics:PutEvents"
+                  - "cognito-sync:*"
+                  - "cognito-identity:*"
+                Resource: "*"
+
+  LambdaExecutionRole:
+    Description: Creating service role in IAM for AWS Lambda
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'cps-${FunctionNameSuffix}-Role'
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [lambda.amazonaws.com]
+          Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonDynamoDBFullAccess'
+  
+Outputs:
+  CognitoIdentityPoolId:
+    Description: "COGNITO_IDENTITY_ID to be consumed in UI"
+    Value: !Ref CognitoIdentityPool
+  MyCognitoUserPool:
+    Description: 'USER_POOL_ID to be consumed in UI'
+    Value: !Ref MyCognitoUserPool
+  MyCognitoUserPoolClient:
+    Description: 'CLIENT_ID to be consumed in UI'
+    Value: !Ref MyCognitoUserPoolClient
+  Region:
+    Description: "REGION to be consumed in UI"
+    Value: !Ref AWS::Region
+  SchedulerApi:
+    Description: 'API to be consumed in UI'
+    Value: !Sub 'https://${SchedulerApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}'
+  S3Bucket:
+    Description: "BUCKET_NAME to be consumed in UI"
+    Value: !Ref AppBucketName
+  EpgPath:
+    Description: "EPG_PATH to be consumed in UI"
+    Value: !Ref EpgPath 
+  ProgramDBUrl:
+    Description: 'Internal API to fetch program urls. To be pasted in cps-scheduler deployment'
+    Value: !Sub 'https://${ChannelsInternalApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/programurl'

@@ -1,0 +1,62 @@
+body {
+
+    background: linear-gradient(to bottom right, #4A2AB2, #23A5E9);
+    font: 20px Helvetica, sans-serif;
+    color: white;
+    min-height: 100vh;
+}
+
+a {
+    color: #dc8100;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #333;
+    text-decoration: none;
+}
+
+.main-wrapper {
+    color: black;
+    padding: 2rem 2rem 4rem 0rem;
+    margin: 30px 10px 0px 10px;
+    background: #fff;
+    border-radius: 1rem;
+}
+
+.theme {
+    height: 100px;
+}
+
+.header-section {
+    padding: 10px;
+    color: white;
+    font: 26px Helvetica, sans-serif !important;
+}
+
+.add_channel_style {
+    color: blue;
+    cursor: pointer;
+}
+
+.add_channel_style:hover {
+    color: green;
+    cursor: pointer;
+}
+
+.btn_icons {
+    position: absolute;
+    bottom: 12px;
+    left: 13px;
+}
+
+.timeline_program_details {
+    color: #02587f;
+    font-weight: bold;
+}
+
+.timeline_button_div {
+    position: absolute;
+    top: -40px;
+    right: 0px;
+}

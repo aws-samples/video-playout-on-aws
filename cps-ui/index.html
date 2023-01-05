@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Cloud Playout Scheduler</title>
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="node_modules/timelinejs-slider/dist/css/timeline.min.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons">
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-material-design@4.1.1/dist/css/bootstrap-material-design.min.css" integrity="sha384-wXznGJNEXNG1NFsbm0ugrLFMQPWswR3lds2VeinahP8N0zJw9VWSopbjv2x7WCvX" crossorigin="anonymous">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link href="https://vjs.zencdn.net/7.14.3/video-js.css" rel="stylesheet" />
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+</head>
+
+<body>
+    <div id="login-screen">
+        <div class="main-wrapper container" style="max-width:400px">
+            <div class="login-form">
+                <h2>Cloud Playout Scheduler</h2>
+                <br/>
+                <div class="form-group ">
+                    <input type="text" class="form-control" placeholder="Username " id="UserName" required=true>
+                </div>
+                <div class="form-group log-status"> <input type="password" class="form-control" placeholder="Password" id="Password" required=true>
+                </div>
+                <br/>
+                <span id="span-credentaials erro" style="display:none" class="alert">Invalid Credentials <br/></span>
+
+                <center>
+                    <button id="btn-sign-in" type="button" class="btn btn-lg  btn-raised btn-primary">Sign in</button>
+                </center>
+                <!--<br/>-->
+                <!--<a class="link" href="#">No Account? Sign Up</a>-->
+            </div>
+        </div>
+    </div>
+    <div id="main-body" style="display:none">
+        <nav class="navbar navbar-dark bg-dark">
+            <a class="navbar-brand" href="https://cloudplayoutservice.auth.us-east-1.amazoncognito.com/login?client_id=1e21ag6lkfv5loolo3or9tkg9m&response_type=token&scope=email+openid&redirect_uri=http://localhost:8080/loginsucess">
+            <img src="/assets/event.png" width="30" height="30" class="d-inline-block align-top" alt="">
+            <span>Cloud Playout Scheduler</span>
+        </a>
+            <span id="welcomespan" style="float: right;color: white"> Welcome, <b><span id="username"></span></b>
+            <button id="logout" type="button" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="logout">
+                <i class="material-icons"><span class="material-icons-outlined"><span class="material-icons-outlined">
+                            power_settings_new
+                        </span>
+                    </span>
+                </i>
+            </button>
+            </span>
+        </nav>
+        <main class="main-wrapper container">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-9">
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend">
+                            </div>
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="basic-addon3">Channel Name : &nbsp;</span>
+                                <input type="hidden" id="txt_channel_id" value="" />
+                            </div>
+                            <input id="txt_select_channel" class="form-control" placeholder="Select Existing Channel or Add new channel name and click on +" type="text">
+                            <span class="input-group-text" id="add-channel">
+                                <i class="material-icons">
+                                    <span class="material-icons-outlined">
+                                        <span class="material-icons-outlined add_channel_style" data-toggle="tooltip" data-placement="top" title="Add New Channel">
+                                            <span class="material-icons">
+                                                add_circle_outline
+                                            </span>
+                            </span>
+                            </span>
+                            </i>
+                            </span>
+
+                        </div>
+                    </div>
+                    <div class="col-md">
+                        <div class="alert alert-success text-center" id="status_playing" role="alert" style="display: none">
+                            <b>NOW PLAYING!</b>
+                        </div>
+                        <div class="alert alert-danger text-center" id="status_stopped" role="alert" style="display: none">
+                            <b>Playout Stopped!</b>
+                        </div>
+                        <div class="alert alert-info text-center" id="status_ready" role="alert" style="display: none">
+                            <b>Ready for Playout!</b>
+                        </div>
+                        <div class="alert alert-dark text-center" id="status_noshedule" role="alert" style="display: none">
+                            <b>No Programs Scheduled!</b>
+                        </div>
+                        <div class="alert alert-dark text-center" id="status_nochannel" role="alert">
+                            <b>No Channels Available!</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container channel_content">
+                <div class="row">
+                    <div class="col-md">
+                        &nbsp;
+                    </div>
+                    <div class="col-md">
+                        &nbsp;
+                    </div>
+                </div>
+            </div>
+            <div class="container channel_content">
+                <div class="row">
+                    <div class="col-sm-9">
+                        <div class="jumbotron jumbotron-fluid" id="noschedules">
+                            <div class="container text-center">
+                                <h1 class="display-4">&nbsp;</h1>
+                                <h1 class="display-4">No Programs Scheduled</h1>
+                                <p class="lead">
+                                    <button type="button" class="btn btn-lg btn-raised btn-primary btn_addprogram">
+                                        <i class="material-icons">
+                                            <span class="material-icons-outlined">
+                                                <span class="material-icons-outlined" data-toggle="tooltip" data-placement="top" title="Add Program">
+                                                    <span class="material-icons btn_icons">
+                                                        <span class="material-icons-outlined">add
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                            </span>
+                                        </i>
+                                        &nbsp;&nbsp; Add Program</button>
+                                </p>
+                                <h1 class="display-4">&nbsp;</h1>
+                            </div>
+                        </div>
+                        <div class="timeline-container timeline-theme-1" style="display: none" id="scheduletimeline">
+                            <div class="timeline js-timeline" id="mytimeline">
+                                <div class="theme box-item" data-time="00:00">
+                                    Default
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="col-sm">
+                        <div>
+                            <div class="row">
+                                <div class="col-md">
+                                    <video id="cps-videojs-player" width="245" height="180" controls poster="assets/summit.png" style="background-color:black" class="video-js">
+                                </video>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md">
+                                    <button type="button" id="btn_copy_url" class="form-control btn btn-lg  btn-raised btn-success" style="display:none">
+                                        <i class="material-icons">
+                                            <span class="material-icons-outlined">
+                                                <span class="material-icons-outlined" data-toggle="tooltip" data-placement="top" title="Create Channel">
+                                                    <span class="material-icons btn_icons">
+                                                        <span class="material-icons-outlined">content_copy
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                            </span>
+                                        </i>
+                                        &nbsp;&nbsp; Copy Url</button>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md">
+                                    <hr>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md">
+                                    <button type="button" id="btn_ready" class="form-control btn btn-lg  btn-raised btn-success">
+                                        <i class="material-icons">
+                                            <span class="material-icons-outlined">
+                                                <span class="material-icons-outlined" data-toggle="tooltip" data-placement="top" title="Create Channel">
+                                                    <span class="material-icons btn_icons">
+                                                        <span class="material-icons-outlined">create
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                            </span>
+                                        </i>
+                                        &nbsp;Create Channel</button>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md">
+                                    <button type="button" id="btn_start" class="form-control btn btn-lg  btn-raised btn-success" style="display:none">
+                                        <i class="material-icons">
+                                            <span class="material-icons-outlined">
+                                                <span class="material-icons-outlined" data-toggle="tooltip" data-placement="top" title="Delete Channel">
+                                                    <span class="material-icons btn_icons">
+                                                        <span class="material-icons-outlined">live_tv
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                            </span>
+                                        </i>
+                                        &nbsp;Start Channel</button>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md">
+                                    <button type="button" id="btn_stop" class="form-control btn btn-lg  btn-raised btn-danger" style="display:none">
+                                        <i class="material-icons">
+                                            <span class="material-icons-outlined">
+                                                <span class="material-icons-outlined" data-toggle="tooltip" data-placement="top" title="Delete Channel">
+                                                    <span class="material-icons btn_icons">
+                                                        <span class="material-icons-outlined">stop
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                            </span>
+                                        </i>
+                                        &nbsp;Stop Channel</button>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md">
+                                    <button id="btn_delete" type="button" class="form-control btn btn-lg  btn-raised btn-danger" style="display:none">
+                                        <i class="material-icons">
+                                            <span class="material-icons-outlined">
+                                                <span class="material-icons-outlined" data-toggle="tooltip" data-placement="top" title="Stop Channel">
+                                                    <span class="material-icons btn_icons">
+                                                        stop
+                                                    </span>
+                                                </span>
+                                            </span>
+                                        </i>
+                                        Stop Channel
+                                    </button>
+                                </div>
+                            </div>
+                            <!--<div class="row">-->
+                            <!--    <div class="col-md">-->
+                            <!--        <button type="button" id="btn_addprogram" class="form-control btn btn-lg  btn-raised btn-info btn_addprogram">Add Program</button>-->
+                            <!--    </div>-->
+                            <!--</div>-->
+                            <div class="row">
+                                <div class="col-md">
+                                    <button type="button" id="btn_upload" class="form-control btn btn-lg  btn-raised btn-info">
+                                        <i class="material-icons">
+                                            <span class="material-icons-outlined">
+                                                <span class="material-icons-outlined" data-toggle="tooltip" data-placement="top" title="Delete Channel">
+                                                    <span class="material-icons btn_icons">
+                                                        <span class="material-icons-outlined">upload
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                            </span>
+                                        </i>
+                                        &nbsp;Upload EPG</button>
+                                </div>
+                            </div>
+                            <input type="file" name="fileupload" id="epg_upload" style="display:none" />
+                            <div class="row">
+                                <div class="col-md">
+                                    <button type="button" id="btn_addprogram" class="form-control btn btn-lg  btn-raised btn-info btn_addprogram">
+                                        <i class="material-icons">
+                                            <span class="material-icons-outlined">
+                                                <span class="material-icons-outlined" data-toggle="tooltip" data-placement="top" title="Add Program">
+                                                    <span class="material-icons btn_icons">
+                                                        <span class="material-icons-outlined">add
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                            </span>
+                                        </i>
+                                        &nbsp;Add Program</button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--
+        <button type="button" class="btn btn-info bmd-btn-fab float-right" data-toggle="tooltip" data-placement="top" title="Add new program to schedule">
+            <i class="material-icons">add</i>
+        </button>
+-->
+        </main>
+    </div>
+    <script type="text/javascript" src="config.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jqueryrouter@2.2.11/dist/js/jquery.router.min.js"></script>
+    <script type="text/javascript" src="node_modules/timelinejs-slider/dist/js/timeline.min.js"></script>
+    <script type="text/javascript" src="assets/scripts/aws-sdk.min.js"></script>
+    <script type="text/javascript" src="assets/scripts/amazon-cognito-identity.min.js"></script>
+    <script src="https://unpkg.com/popper.js@1.12.6/dist/umd/popper.js" integrity="sha384-fA23ZRQ3G/J53mElWqVJEGJzU0sTs+SvzG8fXVWP+kJQ1lwFAOkcUOysnlKJC33U" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://vjs.zencdn.net/7.14.3/video.min.js"></script>
+    <!--<script src="https://unpkg.com/videojs-contrib-hls/dist/videojs-contrib-hls.js"></script>-->
+    <script type="text/javascript" src="assets/scripts/aws.js"></script>
+    <script type="text/javascript" src="assets/scripts/main.js"></script>
+
+    <script type="text/javascript">
+        $(".channel_content").hide();
+        $('.timeline').Timeline();
+
+        if (!validateToken()) {
+            $('.fail').show();
+            userLogout();
+        }
+        else {
+            var username = getTokenJson();
+            loginSucessful(username.email);
+        }
+
+        $('#logout').click(function() {
+            userLogout();
+        });
+    </script>
+</body>
+
+</html>

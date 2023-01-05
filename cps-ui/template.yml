@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Serverless website
+
+Parameters:
+  AppBucketName:
+    Type: String
+    Description: "REQUIRED: Unique S3 bucket name to be used host cps ui."
+    Default: "cps-s3-website"
+Resources:
+  CloudFrontOriginAccessIdentity:
+    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: 'Serverless website OA'
+
+  CloudfrontDistribution:
+    Type: "AWS::CloudFront::Distribution"
+    Properties:
+      DistributionConfig:
+        Comment: "Cloudfront distribution for CPS website"
+        DefaultRootObject: "index.html"
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          - Id: cps-website
+            DomainName:  !Sub "${AppBucketName}.s3.${AWS::Region}.amazonaws.com"
+            S3OriginConfig:
+              OriginAccessIdentity: 
+                Fn::Sub: 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+        DefaultCacheBehavior:
+          Compress: 'true'
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          ForwardedValues:
+            QueryString: false
+          TargetOriginId: cps-website
+          ViewerProtocolPolicy : redirect-to-https
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref AppBucketName
+
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Statement:
+          -
+            Effect: Allow
+            Action: 's3:GetObject'
+            Resource:
+              - !Sub "arn:aws:s3:::${S3Bucket}/*"
+            Principal:
+              AWS: !Sub "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}"
+              
+Outputs:
+  S3Bucket:
+    Description: "S3 bucket to which UI need to be uploaded"
+    Value: !Ref AppBucketName
+  WebsiteURL:
+    Description: "URL to access cps-ui"
+    Value: !Sub "https://${CloudfrontDistribution.DomainName}" 

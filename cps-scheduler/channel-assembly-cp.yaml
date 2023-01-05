@@ -1,0 +1,456 @@
+# Copyright 2019-2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License").
+# You may not use this file except in compliance with the License.
+# A copy of the License is located at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# or in the "license" file accompanying this file. This file is distributed
+# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied. See the License for the specific language governing
+# permissions and limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  AWS CloudFormation sample template that builds cloudplayout solution using Channel assmebly 
+
+Parameters:
+  ProgramDBUrl:
+    Description: "Enter Program DB URL"
+    Type: String
+
+Resources:
+  CloudplayoutCreateLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: cloudplayout_create_lambda
+      Timeout: 300
+      MemorySize: 1024
+      ReservedConcurrentExecutions: 10
+      Handler: lambda_function.lambda_handler
+      Runtime: ruby2.7
+      Code: ./epg-ca-create-lambda/
+      Role: !GetAtt CloudplayoutCreateLambdaRole.Arn
+      Environment:
+        Variables:
+          PROGRAM_DB_URL: !Ref ProgramDBUrl
+          ACCOUNT_ID: !Ref 'AWS::AccountId'
+          PROGRAM_DB_REGION: !Ref 'AWS::Region'
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W89
+            reason: "Just used only for POC; hence no VPC deployment for lambda"
+  
+  CloudplayoutCreateLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /service-role/
+      Policies:
+        - PolicyName: !Sub '${AWS::StackName}-cp-create-policy'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - 'mediatailor:*'
+                Resource: '*'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+  CloudplayoutStartLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: cloudplayout_start_lambda
+      Timeout: 300
+      MemorySize: 1024
+      ReservedConcurrentExecutions: 10
+      Handler: lambda_function.lambda_handler
+      Runtime: ruby2.7
+      Code: ./epg-ca-start-lambda/
+      Role: !GetAtt CloudplayoutStartLambdaRole.Arn
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W89
+            reason: "Just used only for POC; hence no VPC deployment for lambda"
+  
+  CloudplayoutStartLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /service-role/
+      Policies:
+        - PolicyName: !Sub '${AWS::StackName}-cp-start-policy'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - 'mediatailor:*'
+                Resource: '*'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+  CloudplayoutStopLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: cloudplayout_stop_lambda
+      Timeout: 300
+      MemorySize: 1024
+      ReservedConcurrentExecutions: 10
+      Handler: lambda_function.lambda_handler
+      Runtime: ruby2.7
+      Code: ./epg-ca-stop-lambda/
+      Role: !GetAtt CloudplayoutStopLambdaRole.Arn
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W89
+            reason: "Just used only for POC; hence no VPC deployment for lambda"
+  
+  CloudplayoutStopLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /service-role/
+      Policies:
+        - PolicyName: !Sub '${AWS::StackName}-cp-stop-policy'
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - 'mediatailor:*'
+                Resource: '*'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+  CACloudplayoutApi:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: Channel Assembly Cloudplayout API
+      Description: API used for Channel Assembly Cloudplayout
+      FailOnWarnings: true
+  
+  CACloudplayoutUsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    Properties:
+      ApiStages:
+        - ApiId: !Ref CACloudplayoutApi
+          Stage: !Ref CACloudplayoutApiStage
+      Description: Channel Assembly cloudplayout default usage plan
+      Quota:
+        Limit: 5000
+        Period: MONTH
+      Throttle:
+        BurstLimit: 200
+        RateLimit: 100
+
+  CloudplayoutCreateLambdaPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:invokeFunction'
+      FunctionName: !GetAtt 
+        - CloudplayoutCreateLambda
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref CACloudplayoutApi
+          - /*
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W24
+            reason: "Only invoke would suffice"
+
+  CloudplayoutStartLambdaPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:invokeFunction'
+      FunctionName: !GetAtt 
+        - CloudplayoutStartLambda
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref CACloudplayoutApi
+          - /*
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W24
+            reason: "Only invoke would suffice"
+    
+  CloudplayoutStopLambdaPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:invokeFunction'
+      FunctionName: !GetAtt 
+        - CloudplayoutStopLambda
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref CACloudplayoutApi
+          - /*
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W24
+            reason: "Only invoke would suffice"
+
+  CACloudplayoutCloudWatchLogsRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: ApiGatewayLogsPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:DescribeLogGroups'
+                  - 'logs:DescribeLogStreams'
+                  - 'logs:PutLogEvents'
+                  - 'logs:GetLogEvents'
+                  - 'logs:FilterLogEvents'
+                Resource: '*'
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "For now holding it for wildcard resource as per the AWS doc"
+
+  CACloudplayoutAccount:
+    Type: 'AWS::ApiGateway::Account'
+    Properties:
+      CloudWatchRoleArn: !GetAtt 
+        - CACloudplayoutCloudWatchLogsRole
+        - Arn
+  CACloudplayoutApiStage:
+    DependsOn:
+      - CACloudplayoutAccount
+    Type: 'AWS::ApiGateway::Stage'
+    Properties:
+      DeploymentId: !Ref CACloudplayoutApiDeployment
+      AccessLogSetting: 
+        DestinationArn: !GetAtt AccessLogGroup.Arn
+        Format: '{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","resourcePath":"$context.resourcePath","status":$context.status,"responseLatency":$context.responseLatency}'
+      MethodSettings:
+        - DataTraceEnabled: true
+          HttpMethod: '*'
+          LoggingLevel: INFO
+          ResourcePath: /*
+      RestApiId: !Ref CACloudplayoutApi
+      StageName: LATEST
+  
+  AccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      RetentionInDays: 7
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W84
+            reason: "Log encryption avoid no sensitive data"
+
+  CACloudplayoutApiDeployment:
+    Type: 'AWS::ApiGateway::Deployment'
+    DependsOn:
+      - CreateCloudplayoutChannelRequest
+      - StartCloudplayoutChannelRequest
+      - StopCloudplayoutChannelRequest
+    Properties:
+      RestApiId: !Ref CACloudplayoutApi
+      StageName: cloudplayout
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W68
+            reason: "Usage plan not required for API deployment ; its experimental"
+  
+  CreateCloudplayoutChannelResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref CACloudplayoutApi
+      ParentId: !GetAtt 
+        - CACloudplayoutApi
+        - RootResourceId
+      PathPart: create
+  
+  CreateCloudplayoutChannelRequest:
+    DependsOn: CloudplayoutCreateLambdaPermission
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - CloudplayoutCreateLambda
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      RequestParameters:
+        method.request.querystring.name: false
+      ResourceId: !Ref CreateCloudplayoutChannelResource
+      RestApiId: !Ref CACloudplayoutApi
+      MethodResponses:
+        - StatusCode: 200
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W59
+            reason: "Authorisation not required, This is experimental pipeline for customer to use internally"
+
+  StartCloudplayoutChannelResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref CACloudplayoutApi
+      ParentId: !GetAtt 
+        - CACloudplayoutApi
+        - RootResourceId
+      PathPart: start
+  
+  StartCloudplayoutChannelRequest:
+    DependsOn: CloudplayoutStartLambdaPermission
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - CloudplayoutStartLambda
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      RequestParameters:
+        method.request.querystring.name: false
+      ResourceId: !Ref StartCloudplayoutChannelResource
+      RestApiId: !Ref CACloudplayoutApi
+      MethodResponses:
+        - StatusCode: 200
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W59
+            reason: "Authorisation not required, This is experimental pipeline for customer to use internally"
+  
+  StopCloudplayoutChannelResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref CACloudplayoutApi
+      ParentId: !GetAtt 
+        - CACloudplayoutApi
+        - RootResourceId
+      PathPart: stop
+  
+  StopCloudplayoutChannelRequest:
+    DependsOn: CloudplayoutStopLambdaPermission
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - CloudplayoutStopLambda
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      RequestParameters:
+        method.request.querystring.name: false
+      ResourceId: !Ref StopCloudplayoutChannelResource
+      RestApiId: !Ref CACloudplayoutApi
+      MethodResponses:
+        - StatusCode: 200
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W59
+            reason: "Authorisation not required, This is experimental pipeline for customer to use internally"
+  
+  
+Outputs:
+  SCHEDULERAPI:
+    Description: SCHEDULER_API URL for channel assembly scheduler. To be consumed in UI 
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !Ref CACloudplayoutApi
+        - .execute-api.
+        - !Ref 'AWS::Region'
+        - .amazonaws.com
