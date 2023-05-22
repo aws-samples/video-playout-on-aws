@@ -21,7 +21,6 @@ This project contains source code and supporting files for a serverless applicat
 ------------------------------------------
 * Change directory to cps-backend folder
 ```bash
-sam build
 sam deploy --guided --capabilities CAPABILITY_NAMED_IAM
 ```
 
