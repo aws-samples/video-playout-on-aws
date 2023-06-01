@@ -48,6 +48,8 @@ sam deploy --guided --capabilities CAPABILITY_NAMED_IAM
 
 * Copy and save Output Paramers of the stack to a notepad
 
+<span style="color:#777"> Note: Application deployed by CDK is a sample/reference application. The componets deployed in cdk does not have tracing and logging functionlaities enalbed. We recomend you to enables same in production for better visiblity. Encryption & backups of Storage and Databse in not enabled. You can choose to enable same in application. </span>
+
 ## To build and deploy cps-scheduler for the first time, run the following in your shell:
 ------------------------------------------
 * Change directory to cps-scheduler folder
